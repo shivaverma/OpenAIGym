@@ -83,6 +83,10 @@ def get_reward(state):
     if state[0] >= 0.5:
         print("Car has reached the goal")
         return 50
+    elif state[0] >= 0.4:
+        return 40
+    elif state[0] >= 0.3:
+        return 20
     if state[0] > -0.4:
         return (1+state[0])**2
     return 0
@@ -131,7 +135,7 @@ if __name__ == '__main__':
 
     print(env.observation_space)
     print(env.action_space)
-    episodes = 1200
+    episodes = 1000
     loss = train_dqn(episodes)
     plt.plot([i+1 for i in range(episodes)], loss)
     plt.show()
