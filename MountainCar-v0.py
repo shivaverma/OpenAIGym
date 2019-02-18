@@ -10,10 +10,13 @@ from keras import Sequential
 from collections import deque
 from keras.layers import Dense
 from keras.optimizers import adam
+import matplotlib.pyplot as plt
 from keras.activations import relu, linear
 
 import numpy as np
 env = gym.make('MountainCar-v0')
+env.seed(0)
+np.random.seed(0)
 
 
 class DQN:
@@ -26,18 +29,21 @@ class DQN:
         self.state_space = state_space
         self.epsilon = 1.0
         self.gamma = .95
-        self.epsilon_min = .001
-        self.epsilon_decay = .999
-        self.memory = deque(maxlen=2000)
+        self.batch_size = 64
+        self.epsilon_min = .01
+        self.buffer_size = 32
+        self.lr = 0.01
+        self.epsilon_decay = .995
+        self.memory = deque(maxlen=20000)
         self.model = self.build_model()
 
     def build_model(self):
 
         model = Sequential()
-        model.add(Dense(24, input_dim=self.state_space, activation=relu))
+        model.add(Dense(14, input_dim=self.state_space, activation=relu))
         model.add(Dense(24, activation=relu))
         model.add(Dense(self.action_space, activation=linear))
-        model.compile(loss='mse', optimizer=adam())
+        model.compile(loss='mse', optimizer=adam(lr=self.lr))
         return model
 
     def remember(self, state, action, reward, next_state, done):
@@ -52,37 +58,59 @@ class DQN:
 
     def replay(self):
 
-        minibatch = random.sample(self.memory, min(len(self.memory)-1, 32))
+        minibatch = random.sample(self.memory, min(len(self.memory)-1, self.batch_size))
+        x = []
+        y = []
         for state, action, reward, next_state, done in minibatch:
             target = reward
             if not done:
                 target = reward + self.gamma*(np.amax(self.model.predict(next_state)[0]))
             target_full = self.model.predict(state)
             target_full[0][action] = target
-            self.model.fit(state, target_full, epochs=1, verbose=0)
+            x.append(state)
+            y.append(target_full)
+        x = np.array(x)
+        x = x.reshape(x.shape[0], x.shape[2])
+        y = np.array(y)
+        y = y.reshape(y.shape[0], y.shape[2])
+        self.model.fit(x, y, epochs=1, verbose=0)
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
 
+def get_reward(state):
+
+    if state[0] >= 0.5:
+        print("Car has reached the goal")
+        return 50
+    if state[0] > -0.4:
+        return (1+state[0])**2
+    return 0
+
+
 def train_dqn(episode):
 
+    loss = []
     agent = DQN(env.action_space.n, env.observation_space.shape[0])
     for e in range(episode):
         state = env.reset()
-        state = np.reshape(state, [1, 2])
+        state = np.reshape(state, (1, 2))
         score = 0
-        for t in range(500):
+        for t in range(500000):
             env.render()
             action = agent.act(state)
             next_state, reward, done, _ = env.step(action)
+            reward = get_reward(next_state)
             score += reward
-            next_state = np.reshape(next_state, [1, 2])
+            next_state = np.reshape(next_state, (1, 2))
             agent.remember(state, action, reward, next_state, done)
             state = next_state
             if done:
                 print("episode: {}/{}, score: {}".format(e, episode, score))
                 break
         agent.replay()
+        loss.append(score)
+    return loss
 
 
 def random_policy(episode, step):
@@ -101,4 +129,9 @@ def random_policy(episode, step):
 
 if __name__ == '__main__':
 
-    train_dqn(20000)
+    print(env.observation_space)
+    print(env.action_space)
+    episodes = 1200
+    loss = train_dqn(episodes)
+    plt.plot([i+1 for i in range(episodes)], loss)
+    plt.show()
