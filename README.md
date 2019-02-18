@@ -12,7 +12,7 @@ I solved this problem using DQN in around 500 episodes. Following is a graph of 
 
 <img src=cart-pole/cart_pole.png width="400">
 
-# Project 1: Mountain-Car
+# Project 2: Mountain-Car
 
 <img src=mountain-car/mountain_car.gif width="400">
 
