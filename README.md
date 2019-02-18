@@ -1,9 +1,12 @@
-# Project 1: Navigation
+# Project 1: Cart-Pole
 
-[image1]: cart-pole/cart_pole.gif
+[problem]: cart-pole/cart_pole.gif
+[graph]: cart-pole/cart_pole.png
 
 ### Introduction
 
-For this project, I am training an agent to navigate (and collect bananas!) in a large, square world.  
+In this project we have to balance a rod on top of a cart. Action and State spaces are discrete here. Number of action spaces is 2 which is move the cart to left or right. 
 
 ![image1]
+
+I solved this problem using DQN in around 600 episodes. Following is a graph of score vs episodes.
