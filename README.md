@@ -1,4 +1,4 @@
-## Project 1: Cart-Pole
+# Project 1: Cart-Pole
 
 <img src=cart-pole/cart_pole.gif width="400">
 
