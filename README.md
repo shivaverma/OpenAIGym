@@ -36,6 +36,6 @@
 - In this project we have to balance the pendulam upside down. Number of action spaces is 1 which is torque. Action space is continuous here.
 - **`0`** - torque [-2, 2]
 
-- I solved this problem using DDPG in around 200 episodes. Following is a graph of score vs episodes.
+- I solved this problem using DDPG in around 100 episodes. Following is a graph of score vs episodes.
 
 <img src=pendulam/pendulam.png width="400">
