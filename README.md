@@ -39,3 +39,17 @@
 - I solved this problem using DDPG in around 100 episodes. Following is a graph of score vs episodes.
 
 <img src=pendulam/pendulam.png width="400">
+
+
+# Project 3: Pendulam
+
+<img src=acrobot/acrobot.gif width="400">
+
+### Introduction
+
+- In this task we have to balance the pendulam upside down. Number of action spaces is 1 which is torque applied on the joint. Action space is continuous here.
+- **`0`** - torque [-2, 2]
+
+- I solved this problem using DDPG in around 100 episodes. Following is a graph of score vs episodes.
+
+<img src=acrobot/acrobot.png width="400">
