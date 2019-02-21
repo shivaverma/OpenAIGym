@@ -43,7 +43,7 @@
 
 # Project 3: Pendulam
 
-<img src=acrobot/acrobot.gif width="400">
+<img src=acrobot/acrobot.jpg width="400">
 
 ### Introduction
 
