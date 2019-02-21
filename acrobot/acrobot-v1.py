@@ -34,14 +34,14 @@ class DQN:
         self.epsilon_min = .01
         self.epsilon_decay = .995
         self.learning_rate = 0.001
-        self.memory = deque(maxlen=10000)
+        self.memory = deque(maxlen=100000)
         self.model = self.build_model()
 
     def build_model(self):
 
         model = Sequential()
-        model.add(Dense(24, input_shape=(self.state_space,), activation='relu'))
-        model.add(Dense(24, activation='relu'))
+        model.add(Dense(128, input_shape=(self.state_space,), activation='relu'))
+        model.add(Dense(128, activation='relu'))
         model.add(Dense(self.action_space, activation='linear'))
         model.compile(loss='mse', optimizer=adam(lr=self.learning_rate))
         return model
@@ -88,15 +88,14 @@ def train_dqn(episode):
     agent = DQN(env.action_space.n, env.observation_space.shape[0])
     for e in range(episode):
         state = env.reset()
-        state = np.reshape(state, (1, 4))
+        state = np.reshape(state, (1, 6))
         score = 0
-        max_steps = 1000
-        for i in range(max_steps):
+        while True:
             env.render()
             action = agent.act(state)
             next_state, reward, done, _ = env.step(action)
             score += reward
-            next_state = np.reshape(next_state, (1, 4))
+            next_state = np.reshape(next_state, (1, 6))
             agent.remember(state, action, reward, next_state, done)
             state = next_state
             agent.replay()
@@ -107,23 +106,12 @@ def train_dqn(episode):
     return loss
 
 
-def random_policy(episode, step):
-
-    for i_episode in range(episode):
-        env.reset()
-        for t in range(step):
-            env.render()
-            action = env.action_space.sample()
-            state, reward, done, info = env.step(action)
-            if done:
-                print("Episode finished after {} timesteps".format(t+1))
-                break
-            print("Starting next episode")
-
-
 if __name__ == '__main__':
 
-    ep = 200
+    print(env.observation_space.shape)
+    print(env.action_space.shape)
+
+    ep = 150
     loss = train_dqn(ep)
     plt.plot([i+1 for i in range(0, ep, 2)], loss[::2])
     plt.show()
