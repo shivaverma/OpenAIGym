@@ -8,7 +8,7 @@
 - **`0`** - move cart to the left
 - **`1`** - move cart to the right
 
-- I solved this problem using DQN in around 500 episodes. Following is a graph of score vs episodes.
+- I solved this problem using DQN in around 60 episodes. Following is a graph of score vs episodes.
 
 <img src=cart-pole/cart_pole.png width="400">
 
@@ -23,6 +23,19 @@
 - **`1`** - do nothing
 - **`2`** - move car to right
 
-- I solved this problem using DQN in around 700 episodes. Following is a graph of score vs episodes.
+- I solved this problem using DQN in around 15 episodes. Following is a graph of score vs episodes.
 
 <img src=mountain-car/mountain_car.png width="400">
+
+# Project 3: Pendulam
+
+<img src=pendulam/pendulam.gif width="400">
+
+### Introduction
+
+- In this project we have to balance the pendulam upside down. Number of action spaces is 1 which is torque. Action space is continuous here.
+- **`0`** - torque [-2, 2]
+
+- I solved this problem using DDPG in around 200 episodes. Following is a graph of score vs episodes.
+
+<img src=pendulam/pendulam.png width="400">
