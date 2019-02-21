@@ -34,7 +34,7 @@ class DQN:
         self.epsilon_min = .01
         self.epsilon_decay = .995
         self.learning_rate = 0.001
-        self.memory = deque(maxlen=4000)
+        self.memory = deque(maxlen=10000)
         self.model = self.build_model()
 
     def build_model(self):
@@ -58,7 +58,10 @@ class DQN:
 
     def replay(self):
 
-        minibatch = random.sample(self.memory, min(len(self.memory)-1, self.batch_size))
+        if len(self.memory) < self.batch_size:
+            return
+
+        minibatch = random.sample(self.memory, self.batch_size)
         x = []
         y = []
         for state, action, reward, next_state, done in minibatch:
@@ -87,7 +90,8 @@ def train_dqn(episode):
         state = env.reset()
         state = np.reshape(state, (1, 4))
         score = 0
-        for t in range(500000):
+        max_steps = 1000
+        for i in range(max_steps):
             env.render()
             action = agent.act(state)
             next_state, reward, done, _ = env.step(action)
@@ -95,10 +99,10 @@ def train_dqn(episode):
             next_state = np.reshape(next_state, (1, 4))
             agent.remember(state, action, reward, next_state, done)
             state = next_state
+            agent.replay()
             if done:
                 print("episode: {}/{}, score: {}".format(e, episode, score))
                 break
-        agent.replay()
         loss.append(score)
     return loss
 
@@ -119,7 +123,7 @@ def random_policy(episode, step):
 
 if __name__ == '__main__':
 
-    ep = 1000
+    ep = 50
     loss = train_dqn(ep)
     plt.plot([i+1 for i in range(ep)], loss)
     plt.show()
