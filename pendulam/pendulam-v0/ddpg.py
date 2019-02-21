@@ -10,7 +10,7 @@ from critic import CriticNetwork
 from replay_buffer import ReplayBuffer
 
 
-def train(sess, env, actor, critic, actor_noise, buffer_size, min_batch):
+def train(sess, env, actor, critic, actor_noise, buffer_size, min_batch, ep):
 
     sess.run(tf.global_variables_initializer())
 
@@ -21,8 +21,8 @@ def train(sess, env, actor, critic, actor_noise, buffer_size, min_batch):
     # Initialize replay memory
     replay_buffer = ReplayBuffer(buffer_size, 0)
 
-    max_episodes = 500
-    max_steps = 2000
+    max_episodes = ep
+    max_steps = 1000
     score_list = []
 
     for i in range(max_episodes):
@@ -84,6 +84,7 @@ if __name__ == '__main__':
         np.random.seed(0)
         tf.set_random_seed(0)
 
+        ep = 300
         tau = 0.001
         gamma = 0.99
         min_batch = 64
@@ -99,7 +100,7 @@ if __name__ == '__main__':
         actor = ActorNetwork(sess, state_dim, action_dim, action_bound, actor_lr, tau, min_batch)
         critic = CriticNetwork(sess, state_dim, action_dim, critic_lr, tau, gamma, actor.get_num_trainable_vars())
 
-        scores = train(sess, env, actor, critic, actor_noise, buffer_size, min_batch)
-        plt.plot(scores)
+        scores = train(sess, env, actor, critic, actor_noise, buffer_size, min_batch, ep)
+        plt.plot([i + 1 for i in range(0, ep, 3)], scores[::3])
         plt.show()
 

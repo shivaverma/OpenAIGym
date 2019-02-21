@@ -15,7 +15,7 @@ from keras.optimizers import adam
 import matplotlib.pyplot as plt
 
 import numpy as np
-env = gym.make('CartPole-v0')
+env = gym.make('Acrobot-v1')
 env.seed(0)
 np.random.seed(0)
 
@@ -123,7 +123,7 @@ def random_policy(episode, step):
 
 if __name__ == '__main__':
 
-    ep = 10
+    ep = 200
     loss = train_dqn(ep)
     plt.plot([i+1 for i in range(0, ep, 2)], loss[::2])
     plt.show()

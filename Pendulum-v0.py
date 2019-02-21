@@ -15,7 +15,7 @@ from keras.layers.normalization import BatchNormalization
 from keras.layers import Dense, add, Input, Activation, Lambda
 
 np.random.seed(0)
-env = gym.make('Pendulum-v0')
+env = gym.make('Acrobot-v1')
 
 
 class Actor:
@@ -244,13 +244,13 @@ class DDPG:
 
 if __name__ == '__main__':
 
-    print(env.action_space.shape[0], env.observation_space.shape[0])
+    print(env.action_space.shape, env.observation_space.shape)
     state_size = env.observation_space.shape[0]
     action_size = env.action_space.shape[0]
 
     loss = []
     episodes = 500
-    max_steps = 1000
+    max_steps = 2000
     agent = DDPG()
     for e in range(episodes):
         state = env.reset()
