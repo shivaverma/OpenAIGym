@@ -61,21 +61,22 @@ class DQN:
             return
 
         minibatch = random.sample(self.memory, self.batch_size)
-        x = []
-        y = []
-        for state, action, reward, next_state, done in minibatch:
-            target = reward
-            if not done:
-                target = reward + self.gamma*(np.amax(self.model.predict(next_state)[0]))
-            target_full = self.model.predict(state)
-            target_full[0][action] = target
-            x.append(state)
-            y.append(target_full)
-        x = np.array(x)
-        x = x.reshape(x.shape[0], x.shape[2])
-        y = np.array(y)
-        y = y.reshape(y.shape[0], y.shape[2])
-        self.model.fit(x, y, epochs=1, verbose=0)
+        states = np.array([i[0] for i in minibatch])
+        actions = np.array([i[1] for i in minibatch])
+        rewards = np.array([i[2] for i in minibatch])
+        next_states = np.array([i[3] for i in minibatch])
+        dones = np.array([i[4] for i in minibatch])
+
+        states = np.squeeze(states)
+        next_states = np.squeeze(next_states)
+
+        targets = rewards + self.gamma*(np.amax(self.model.predict_on_batch(next_states), axis=1))*(1-dones)
+        targets_full = self.model.predict_on_batch(states)
+
+        ind = np.array([i for i in range(self.batch_size)])
+        targets_full[[ind], [actions]] = targets
+
+        self.model.fit(states, targets_full, epochs=1, verbose=0)
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
