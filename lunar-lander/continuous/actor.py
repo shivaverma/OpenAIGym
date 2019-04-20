@@ -1,61 +1,88 @@
-from keras import layers, models, optimizers
-from keras import backend as K
-from keras.layers import BatchNormalization, Activation
-from keras import initializers
-from keras import regularizers
-import numpy as np
+import tflearn
+import tensorflow as tf
+from tflearn.initializations import uniform
 
-class ActorNetwork:
 
-    def __init__(self, state_size, action_size, action_low, action_high):
+class ActorNetwork(object):
 
-        self.state_size = state_size
-        self.action_size = action_size
-        self.action_low = action_low
-        self.action_high = action_high
-        self.action_range = self.action_high - self.action_low
-        self.build_model()
+    def __init__(self, sess, state_dim, action_dim, action_bound, learning_rate, tau, batch_size):
+        self.sess = sess
+        self.s_dim = state_dim
+        self.a_dim = action_dim
+        self.action_bound = action_bound
+        self.learning_rate = learning_rate
+        self.tau = tau
+        self.batch_size = batch_size
 
-    def build_model(self):
-        """Build an actor (policy) network that maps states -> actions."""
-        # Define input layer (states)
+        # Actor Network
+        self.inputs, self.out, self.scaled_out = self.create_actor_network()
 
-        w_init = initializers.RandomUniform(minval=-0.05, maxval=0.05)
+        self.network_params = tf.trainable_variables()
 
-        init_state = initializers.RandomUniform(minval=-0.07, maxval=0.07)
+        # Target Network
+        self.target_inputs, self.target_out, self.target_scaled_out = self.create_actor_network()
 
-        states = layers.Input(shape=(self.state_size,), name='states')
+        self.target_network_params = tf.trainable_variables()[
+                                     len(self.network_params):]
 
-        net = layers.Dense(units=400, kernel_initializer=init_state)(states)
-        net = BatchNormalization()(net)
-        net = Activation('relu')(net)
+        # Op for periodically updating target network with online network
+        # weights
+        self.update_target_network_params = \
+            [self.target_network_params[i].assign(tf.multiply(self.network_params[i], self.tau) +
+                                                  tf.multiply(self.target_network_params[i], 1. - self.tau))
+             for i in range(len(self.target_network_params))]
 
-        net = layers.Dense(units=200, kernel_initializer=w_init)(net)
-        net = BatchNormalization()(net)
-        net = Activation('relu')(net)
+        # This gradient will be provided by the critic network
+        self.action_gradient = tf.placeholder(tf.float32, [None, self.a_dim])
 
-        actions = layers.Dense(units=self.action_size, kernel_initializer=init_state, activation='tanh')(net)
+        # Combine the gradients here
+        self.unnormalized_actor_gradients = tf.gradients(
+            self.scaled_out, self.network_params, -self.action_gradient)
+        self.actor_gradients = list(map(lambda x: tf.div(x, self.batch_size), self.unnormalized_actor_gradients))
 
-        # Scale [0, 1] output for each action dimension to proper range
-        # actions = layers.Lambda(lambda x: (x * self.action_range) + self.action_low,
-        #    name='actions')(raw_actions)
+        # Optimization Op
+        self.optimize = tf.train.AdamOptimizer(self.learning_rate). \
+            apply_gradients(zip(self.actor_gradients, self.network_params))
 
-        # Create Keras model
-        self.model = models.Model(inputs=states, outputs=actions)
+        self.num_trainable_vars = len(
+            self.network_params) + len(self.target_network_params)
 
-        # print(self.model.layers, '\n')
-        # print(self.model.layers[-1].get_weights()[0])
+    def create_actor_network(self):
 
-        # Define loss function using action value (Q value) gradients
-        action_gradients = layers.Input(shape=(self.action_size,))
-        loss = K.mean(-action_gradients * actions)
+        inputs = tflearn.input_data(shape=[None, self.s_dim])
 
-        # Incorporate any additional losses here (e.g. from regularizers)
+        net = tflearn.fully_connected(inputs, 400)
+        net = tflearn.layers.normalization.batch_normalization(net)
+        net = tflearn.activations.relu(net)
 
-        # Define optimizer and training function
-        optimizer = optimizers.Adam(lr=0.0001)
-        updates_op = optimizer.get_updates(params=self.model.trainable_weights, loss=loss)
-        self.train_fn = K.function(
-            inputs=[self.model.input, action_gradients, K.learning_phase()],
-            outputs=[],
-            updates=updates_op)
+        net = tflearn.fully_connected(net, 200, weights_init=uniform(minval=-0.002, maxval=0.002))
+        net = tflearn.layers.normalization.batch_normalization(net)
+        net = tflearn.activations.relu(net)
+
+        out = tflearn.fully_connected(net, self.a_dim, activation='tanh', weights_init=uniform(minval=-0.004, maxval=0.004))
+        # Scale output to -action_bound to action_bound
+
+        scaled_out = tf.multiply(out, self.action_bound)
+        return inputs, out, scaled_out
+
+    def train(self, inputs, a_gradient):
+        self.sess.run(self.optimize, feed_dict={
+            self.inputs: inputs,
+            self.action_gradient: a_gradient
+        })
+
+    def predict(self, inputs):
+        return self.sess.run(self.scaled_out, feed_dict={
+            self.inputs: inputs
+        })
+
+    def predict_target(self, inputs):
+        return self.sess.run(self.target_scaled_out, feed_dict={
+            self.target_inputs: inputs
+        })
+
+    def update_target_network(self):
+        self.sess.run(self.update_target_network_params)
+
+    def get_num_trainable_vars(self):
+        return self.num_trainable_vars

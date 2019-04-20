@@ -1,102 +1,113 @@
+import gym
+import tflearn
+import numpy as np
+import tensorflow as tf
+import matplotlib.pyplot as plt
+
+from noise import OUNoise
 from actor import ActorNetwork
 from critic import CriticNetwork
-from replay import ReplayBuffer
-from noise import OUNoise
-import numpy as np
+from replay_buffer import ReplayBuffer
 
 
-class Agent():
+def train(sess, env, actor, critic, actor_noise, buffer_size, min_batch, ep):
 
-    def __init__(self, action_size, state_size, action_low, action_high):
+    sess.run(tf.global_variables_initializer())
 
-        self.state_size = state_size
-        self.action_size = action_size
-        self.action_low = action_low
-        self.action_high = action_high
+    # Initialize target network weights
+    actor.update_target_network()
+    critic.update_target_network()
 
-        # Actor (Policy) Model
-        self.actor_local = ActorNetwork(self.state_size, self.action_size, self.action_low, self.action_high)
-        self.actor_target = ActorNetwork(self.state_size, self.action_size, self.action_low, self.action_high)
+    # Initialize replay memory
+    replay_buffer = ReplayBuffer(buffer_size, 0)
 
-        # Critic (Value) Model
-        self.critic_local = CriticNetwork(self.state_size, self.action_size)
-        self.critic_target = CriticNetwork(self.state_size, self.action_size)
+    max_episodes = ep
+    max_steps = 3000
+    score_list = []
 
-        # Initialize target model parameters with local model parameters
-        self.critic_target.model.set_weights(self.critic_local.model.get_weights())
-        self.actor_target.model.set_weights(self.actor_local.model.get_weights())
+    for i in range(max_episodes):
 
-        # Noise process
-        self.exploration_mu = 0
-        self.exploration_theta = 0.2
-        self.exploration_sigma = 0.15
-        self.noise = OUNoise(self.action_size, self.exploration_mu, self.exploration_sigma, self.exploration_theta)
+        state = env.reset()
+        score = 0
 
-        # Replay memory
-        self.buffer_size = 1000000
-        self.batch_size = 512
-        self.memory = ReplayBuffer(self.buffer_size, self.batch_size)
+        for j in range(max_steps):
 
-        # Algorithm parameters
-        self.gamma = 0.99
-        self.tau = 0.001
+            # env.render()
 
-    def step(self, state, action, reward, next_state, done):
+            action = actor.predict(np.reshape(state, (1, actor.s_dim))) + actor_noise()
+            next_state, reward, done, info = env.step(action[0])
+            replay_buffer.add(np.reshape(state, (actor.s_dim,)), np.reshape(action, (actor.a_dim,)), reward,
+                              done, np.reshape(next_state, (actor.s_dim,)))
 
-        self.memory.add(state, action, reward, next_state, done)
+            # updating the network in batch
+            if replay_buffer.size() < min_batch:
+                continue
 
-        # Learn, if enough samples are available in memory
-        if len(self.memory) > self.batch_size:
-            experiences = self.memory.sample()
-            self.learn(experiences)
+            states, actions, rewards, dones, next_states = replay_buffer.sample_batch(min_batch)
+            target_q = critic.predict_target(next_states, actor.predict_target(next_states))
 
-    def act(self, state, e):
+            y = []
+            for k in range(min_batch):
+                y.append(rewards[k] + critic.gamma * target_q[k] * (1-dones[k]))
 
-        """Returns actions for given state(s) as per current policy."""
-        state = np.reshape(state, [-1, self.state_size])
-        action = self.actor_local.model.predict(state)[0]
-        # print(self.actor_local.model.layers, '\n')
-        # print(self.actor_local.model.layers[-1].get_weights()[0])
-        # sam = self.noise.sample()
-        # print(sam)
-        # if e > 300:
-        #    return list(action)
-        # sam[0] = max(0, sam[0])
-        # print(action)
-        return list(action + self.noise.sample())  # add some noise for exploration
+            # Update the critic given the targets
+            predicted_q_value, _ = critic.train(states, actions, np.reshape(y, (min_batch, 1)))
 
-    def learn(self, experiences):
-        """Update policy and value parameters using given batch of experience tuples."""
-        # Convert experience tuples to separate arrays for each element (states, actions, rewards, etc.)
-        states = np.vstack([e.state for e in experiences if e is not None])
-        actions = np.array([e.action for e in experiences if e is not None]).astype(np.float32).reshape(-1, self.action_size)
-        rewards = np.array([e.reward for e in experiences if e is not None]).astype(np.float32).reshape(-1, 1)
-        dones = np.array([e.done for e in experiences if e is not None]).astype(np.uint8).reshape(-1, 1)
-        next_states = np.vstack([e.next_state for e in experiences if e is not None])
+            # Update the actor policy using the sampled gradient
+            a_outs = actor.predict(states)
+            grads = critic.action_gradients(states, a_outs)
+            actor.train(states, grads[0])
 
-        # Get predicted next-state actions and Q values from target models
-        #     Q_targets_next = critic_target(next_state, actor_target(next_state))
-        actions_next = self.actor_target.model.predict_on_batch(next_states)
-        Q_targets_next = self.critic_target.model.predict_on_batch([next_states, actions_next])
+            # Update target networks
+            actor.update_target_network()
+            critic.update_target_network()
 
-        # Compute Q targets for current states and train critic model (local)
-        Q_targets = rewards + self.gamma * Q_targets_next * (1 - dones)
-        self.critic_local.model.train_on_batch(x=[states, actions], y=Q_targets)
+            state = next_state
+            score += reward
 
-        # Train actor model (local)
-        action_gradients = np.reshape(self.critic_local.get_action_gradients([states, actions, 0]), (-1, self.action_size))
-        self.actor_local.train_fn([states, action_gradients, 1])  # custom training function
+            if done:
+                print('Reward: {} | Episode: {}/{}'.format(int(score), i, max_episodes))
+                break
 
-        # Soft-update target models
-        self.soft_update(self.critic_local.model, self.critic_target.model)
-        self.soft_update(self.actor_local.model, self.actor_target.model)   
+        score_list.append(score)
 
-    def soft_update(self, local_model, target_model):
-        """Soft update model parameters."""
-        local_weights = np.array(local_model.get_weights())
-        target_weights = np.array(target_model.get_weights())
+        avg = np.mean(score_list[-100:])
+        print("Average of last 100 episodes: {0:.2f} \n".format(avg))
 
-        assert len(local_weights) == len(target_weights), "Local and target model parameters must have the same size"
+        if avg > 200:
+            print('Task Completed')
+            break
 
-        new_weights = self.tau * local_weights + (1 - self.tau) * target_weights
-        target_model.set_weights(new_weights)
+    return score_list
+
+
+if __name__ == '__main__':
+
+    with tf.Session() as sess:
+
+        env = gym.make('LunarLanderContinuous-v2')
+
+        env.seed(0)
+        np.random.seed(0)
+        tf.set_random_seed(0)
+
+        ep = 2000
+        tau = 0.001
+        gamma = 0.99
+        min_batch = 64
+        actor_lr = 0.00005
+        critic_lr = 0.0005
+        buffer_size = 1000000
+
+        state_dim = env.observation_space.shape[0]
+        action_dim = env.action_space.shape[0]
+        action_bound = env.action_space.high
+
+        actor_noise = OUNoise(mu=np.zeros(action_dim))
+        actor = ActorNetwork(sess, state_dim, action_dim, action_bound, actor_lr, tau, min_batch)
+        critic = CriticNetwork(sess, state_dim, action_dim, critic_lr, tau, gamma, actor.get_num_trainable_vars())
+        scores = train(sess, env, actor, critic, actor_noise, buffer_size, min_batch, ep)
+
+        plt.plot([i + 1 for i in range(0, len(scores), 4)], scores[::4])
+        plt.show()
+
