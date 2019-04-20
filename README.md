@@ -49,7 +49,7 @@
 - In order to solve the episode you have to get a reward of +200 for 100 consecutive episodes. I solved both the version under 400 episodes.
 
 ### Discrete Version Plot
-<img src=lunar-lander/continuous/lunar_lander.png width="400">
+<img src=lunar-lander/discrete/lunar_lander.png width="400">
 
 ### Continuous Version Plot
-<img src=lunar-lander/discrete/lunar_lander.png width="400">
+<img src=lunar-lander/continuous/lunar_lander.png width="400">
