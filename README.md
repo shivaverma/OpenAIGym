@@ -18,7 +18,7 @@
 
 ### Introduction
 
-- In this task we have teach the car to reach at the goal position which is at the top of mountain. Number of action spaces is 3. Action space is descrete in this environment.
+- In this task we have to teach the car to reach at the goal position which is at the top of mountain. Number of action spaces is 3. Action space is descrete in this environment.
 - **`0`** - move car to left
 - **`1`** - do nothing
 - **`2`** - move car to right
@@ -39,3 +39,17 @@
 - I solved this problem using DDPG in around 100 episodes. Following is a graph of score vs episodes.
 
 <img src=pendulam/pendulam.png width="400">
+
+# Project 4: Lunar-Lander
+
+<img src=lunar-lander/discrete/images/training/after_training.gif width="400">
+
+- The task is to land the space-ship between the flags smoothly. The ship has 3 throttles in it. One throttle points downward and other 2 points in the left and right direction. With the help of these, you have to control the Ship. There are 2 version for this task. One is discrete version which has discrete action space and other is continuous which has continuous action space.
+
+- In order to solve the episode you have to get a reward of +200 for 100 consecutive episodes. I solved both the version under 400 episodes.
+
+### Discrete Version Plot
+<img src=lunar-lander/continuous/lunar_lander.png width="400">
+
+### Continuous Version Plot
+<img src=lunar-lander/discrete/lunar_lander.png width="400">
