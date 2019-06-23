@@ -80,4 +80,4 @@
 
 - I saved my weight from the previous training on simple terrain and resumed my training on the hardcore terrain. I did it because the agent already knew how to walk on simple terrain and now it needs to learn how to cross obstacles while walking.
 
-<img src=Bipedal-Walker/training/5.gif width="400">
+<img src=bipedal-walker/training/5.gif width="400">
