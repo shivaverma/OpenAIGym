@@ -6,28 +6,37 @@
 
 import gym
 import numpy as np
+import matplotlib.pyplot as plt
+
 env = gym.make('Taxi-v2')
 
 
 def q_learning(episode):
 
+    score_list = []
     alpha = .8
     Q = np.zeros([env.observation_space.n, env.action_space.n])
 
     for i in range(episode):
         done = False
-        G, reward = 0,0
+        score, reward = 0,0
         state = env.reset()
 
         while not done:
+
             env.render()
             action = np.argmax(Q[state])
             state2, reward, done, info = env.step(action)
-            Q[state, action] += alpha*(reward + np.max(Q[state2]) - Q[state, action])
-            G += reward
+
+            target = reward + np.max(Q[state2]) - Q[state, action]
+            Q[state, action] += alpha * target
+            score += reward
             state = state2
 
-        print("episode {}, total reward = {}".format(i, G))
+        score_list.append(score)
+        print("episode {}, total reward = {}".format(i, score))
+
+    return score_list
 
 
 def random_policy(episode, step):
@@ -46,4 +55,7 @@ def random_policy(episode, step):
 
 if __name__ == '__main__':
 
-    q_learning(1000)
+    ep = 400
+    score_list = q_learning(ep)
+    plt.plot([i+1 for i in range(0, ep, 4)], score_list[::4])
+    plt.show()
