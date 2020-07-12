@@ -11,7 +11,7 @@ import random
 from keras import Sequential
 from collections import deque
 from keras.layers import Dense
-from keras.optimizers import adam
+from keras.optimizers import Adam
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -43,7 +43,7 @@ class DQN:
         model.add(Dense(24, input_shape=(self.state_space,), activation='relu'))
         model.add(Dense(24, activation='relu'))
         model.add(Dense(self.action_space, activation='linear'))
-        model.compile(loss='mse', optimizer=adam(lr=self.learning_rate))
+        model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
         return model
 
     def remember(self, state, action, reward, next_state, done):
@@ -123,7 +123,7 @@ def random_policy(episode, step):
 
 if __name__ == '__main__':
 
-    ep = 1000
+    ep = 100
     loss = train_dqn(ep)
     plt.plot([i+1 for i in range(0, ep, 2)], loss[::2])
     plt.show()

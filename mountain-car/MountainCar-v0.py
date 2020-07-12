@@ -9,7 +9,7 @@ import random
 from keras import Sequential
 from collections import deque
 from keras.layers import Dense
-from keras.optimizers import adam
+from keras.optimizers import Adam
 import matplotlib.pyplot as plt
 from keras.activations import relu, linear
 
@@ -42,7 +42,7 @@ class DQN:
         model.add(Dense(20, input_dim=self.state_space, activation=relu))
         model.add(Dense(25, activation=relu))
         model.add(Dense(self.action_space, activation=linear))
-        model.compile(loss='mse', optimizer=adam(lr=self.lr))
+        model.compile(loss='mse', optimizer=Adam(lr=self.lr))
         return model
 
     def remember(self, state, action, reward, next_state, done):
