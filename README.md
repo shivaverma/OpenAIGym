@@ -1,3 +1,9 @@
+### Requirements
+
+- **`python`** - `3.7`
+- **`tensorflow`** -  `2.2.0`
+- **`keras`** -  `2.4.3`
+
 # Project 1: Cart-Pole
 
 <img src=cart-pole/cart_pole.gif width="400">
