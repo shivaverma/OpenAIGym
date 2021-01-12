@@ -78,7 +78,7 @@ class DQN:
 
         targets = rewards + self.gamma*(np.amax(self.model.predict_on_batch(next_states), axis=1))*(1-dones)
         targets_full = self.model.predict_on_batch(states)
-        ind = np.array([i for i in range(self.batch_size)])
+        ind = np.arange(self.batch_size)
         targets_full[[ind], [actions]] = targets
 
         self.model.fit(states, targets_full, epochs=1, verbose=0)
